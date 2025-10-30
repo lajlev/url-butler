@@ -5,10 +5,13 @@ A Chrome extension that allows you to automatically add or remove URL parameters
 ## Features
 
 - Automatically remove or add URL parameters based on domain-specific rules
+- Path-based redirects (e.g., always redirect `/u/0` to `/u/2`)
 - Easy-to-use settings panel for managing rules
 - Toggle extension on/off globally
 - Enable/disable individual rules
-- Comes with a default rule for marmalade-ai.com (removes `debug_mode=true` parameter)
+- Comes with default rules:
+  - marmalade-ai.com: removes `debug_mode=true` parameter
+  - gemini.google.com: redirects `/u/0` to `/u/2`
 
 ## Installation
 
@@ -47,9 +50,19 @@ All configured rules are displayed in the settings panel with:
 1. Click the "+ Add New Rule" button
 2. Fill in the form:
    - **Domain**: The website domain (e.g., `marmalade-ai.com`)
+   - **Action**: Choose from:
+     - "Remove Parameter" - Remove a URL parameter
+     - "Add/Update Parameter" - Add or modify a URL parameter
+     - "Path Redirect" - Redirect from one path to another
+   
+   **For Parameter Actions (Remove/Add):**
    - **Parameter Name**: The URL parameter to modify (e.g., `debug_mode`)
    - **Parameter Value**: (Optional) Specific value to match. Leave empty to match any value
-   - **Action**: Choose "Remove Parameter" or "Add/Update Parameter"
+   
+   **For Path Redirect:**
+   - **From Path**: The path to redirect from (e.g., `/u/0`)
+   - **To Path**: The path to redirect to (e.g., `/u/2`)
+
 3. Click "Save Rule"
 
 #### Editing a Rule
@@ -67,16 +80,25 @@ All configured rules are displayed in the settings panel with:
 
 Use the toggle switch next to each rule to temporarily enable or disable it without deleting.
 
-## Default Rule
+## Default Rules
 
-The extension comes pre-configured with one rule:
+The extension comes pre-configured with two rules:
 
+### Rule 1: marmalade-ai.com
 - **Domain**: `marmalade-ai.com`
 - **Parameter**: `debug_mode`
 - **Value**: `true`
 - **Action**: Remove
 
-This means when you visit any URL on `marmalade-ai.com` with `?debug_mode=true` (or `&debug_mode=true`), the parameter will be automatically removed and the page will reload with the clean URL.
+When you visit any URL on `marmalade-ai.com` with `?debug_mode=true` (or `&debug_mode=true`), the parameter will be automatically removed and the page will reload with the clean URL.
+
+### Rule 2: gemini.google.com
+- **Domain**: `gemini.google.com`
+- **From Path**: `/u/0`
+- **To Path**: `/u/2`
+- **Action**: Path Redirect
+
+When you visit `https://gemini.google.com/u/0` (or any URL starting with `/u/0`), you will be automatically redirected to `https://gemini.google.com/u/2`.
 
 ## Examples
 
@@ -115,6 +137,22 @@ To automatically add a parameter to URLs:
 
 Before: `https://example.com/page`
 After: `https://example.com/page?theme=dark`
+
+### Example 4: Path Redirect
+
+To redirect users from one path to another:
+
+- Domain: `example.com`
+- From Path: `/old-dashboard`
+- To Path: `/new-dashboard`
+- Action: Path Redirect
+
+Before: `https://example.com/old-dashboard`
+After: `https://example.com/new-dashboard`
+
+This also works with sub-paths:
+Before: `https://example.com/old-dashboard/settings`
+After: `https://example.com/new-dashboard/settings`
 
 ## How It Works
 
