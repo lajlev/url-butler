@@ -106,15 +106,41 @@ extensionToggle.addEventListener("change", () => {
 });
 
 // Load and display rules
-function loadRules() {
+async function loadRules() {
+  // Get current tab URL
+  let currentUrl = null;
+  try {
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+    if (tab && tab.url) {
+      currentUrl = new URL(tab.url);
+    }
+  } catch (error) {
+    // If we can't get the current tab, just continue without highlighting
+  }
+
   chrome.storage.sync.get(["rules"], (result) => {
     const rules = result.rules || [];
-    displayRules(rules);
+    displayRules(rules, currentUrl);
   });
 }
 
+// Check if a rule matches the current URL
+function isRuleActive(rule, currentUrl) {
+  if (!currentUrl || !rule.enabled) return false;
+
+  // Check if domain matches
+  const domainMatches =
+    currentUrl.hostname === rule.domain ||
+    currentUrl.hostname.endsWith("." + rule.domain);
+
+  return domainMatches;
+}
+
 // Display rules in the UI
-function displayRules(rules) {
+function displayRules(rules, currentUrl = null) {
   if (rules.length === 0) {
     rulesList.innerHTML =
       '<div class="empty-state">No rules configured. Click "Add New Rule" to get started.</div>';
@@ -133,8 +159,11 @@ function displayRules(rules) {
         ruleDescription = `${rule.action === "remove" ? "Remove" : "Add"} parameter: <strong>${escapeHtml(rule.parameter)}</strong>${rule.value ? ` = ${escapeHtml(rule.value)}` : ""}`;
       }
 
+      const isActive = isRuleActive(rule, currentUrl);
+      const activeClass = isActive ? " active" : "";
+
       return `
-        <div class="rule-item" data-rule-id="${rule.id}">
+        <div class="rule-item${activeClass}" data-rule-id="${rule.id}">
           <div class="rule-info">
             <div class="rule-domain">${escapeHtml(rule.domain)}</div>
             <div class="rule-details">${ruleDescription}</div>

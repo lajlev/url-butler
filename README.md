@@ -1,6 +1,6 @@
-# URL Butler
+# Browser Butler
 
-A Chrome extension that allows you to automatically add or remove URL parameters based on configurable rules.
+A Chrome extension that allows you to customize your browsing experience with configurable rules to manage URLs, hide elements, and more.
 
 ## Features
 
@@ -31,7 +31,7 @@ A Chrome extension that allows you to automatically add or remove URL parameters
 
 ### Accessing Settings
 
-Click the URL Butler icon in your Chrome toolbar to open the settings panel.
+Click the Browser Butler icon in your Chrome toolbar to open the settings panel.
 
 ### Global Toggle
 
@@ -43,8 +43,9 @@ Use the toggle switch in the top right of the settings panel to enable or disabl
 
 All configured rules are displayed in the settings panel with:
 - Domain name
-- Parameter name and value (if specified)
-- Action (Remove or Add)
+- Rule details (parameters, paths, or selectors)
+- Action type (Remove, Add, Redirect, or Hide Element)
+- Visual highlight for rules matching the current tab's URL
 - Individual enable/disable toggle
 - Edit and Delete buttons
 

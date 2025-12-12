@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "URL Butler",
+  "name": "Browser Butler",
   "version": "1.0.0",
-  "description": "Manage URL parameters based on configurable rules",
+  "description": "Manage URLs, hide elements, and customize your browsing experience with configurable rules",
   "permissions": ["storage", "tabs", "webNavigation", "scripting"],
   "host_permissions": ["<all_urls>"],
   "background": {

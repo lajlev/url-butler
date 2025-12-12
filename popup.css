@@ -123,6 +123,13 @@ input:checked + .slider:before {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    transition: all 0.2s ease;
+}
+
+.rule-item.active {
+    background: #e8f5e9;
+    border: 2px solid #4caf50;
+    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.2);
 }
 
 .rule-info {
