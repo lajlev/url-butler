@@ -32,14 +32,26 @@ function setupActionToggle() {
 
   // Setup event delegation for rule actions
   rulesList.addEventListener("click", (e) => {
-    const target = e.target;
+    let target = e.target;
+
+    // If clicked on icon, get the button parent
+    if (
+      target.tagName === "I" ||
+      target.tagName === "svg" ||
+      target.tagName === "path"
+    ) {
+      target = target.closest("button");
+    }
+
+    if (!target) return;
+
     const ruleId = target.getAttribute("data-rule-id");
 
     if (!ruleId) return;
 
     if (target.classList.contains("btn-edit")) {
       editRule(parseInt(ruleId));
-    } else if (target.classList.contains("btn-danger")) {
+    } else if (target.classList.contains("btn-delete")) {
       deleteRule(parseInt(ruleId));
     }
   });
@@ -173,8 +185,12 @@ function displayRules(rules, currentUrl = null) {
               <input type="checkbox" ${rule.enabled ? "checked" : ""} data-rule-id="${rule.id}" class="rule-toggle-input">
               <span class="slider"></span>
             </label>
-            <button class="btn btn-edit" data-rule-id="${rule.id}">Edit</button>
-            <button class="btn btn-danger" data-rule-id="${rule.id}">Delete</button>
+            <button class="btn btn-icon btn-edit" data-rule-id="${rule.id}" title="Edit">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+            </button>
+            <button class="btn btn-icon btn-delete" data-rule-id="${rule.id}" title="Delete">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+            </button>
           </div>
         </div>
       `;
