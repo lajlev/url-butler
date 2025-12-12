@@ -6,9 +6,12 @@ A Chrome extension that allows you to automatically add or remove URL parameters
 
 - Automatically remove or add URL parameters based on domain-specific rules
 - Path-based redirects (e.g., always redirect `/u/0` to `/u/2`)
+- **Hide elements on webpages using CSS selectors**
 - Easy-to-use settings panel for managing rules
 - Toggle extension on/off globally
 - Enable/disable individual rules
+- Test CSS selectors before saving rules
+- Automatic handling of dynamically loaded content
 - Comes with default rules:
   - marmalade-ai.com: removes `debug_mode=true` parameter
   - gemini.google.com: redirects `/u/0` to `/u/2`
@@ -54,6 +57,7 @@ All configured rules are displayed in the settings panel with:
      - "Remove Parameter" - Remove a URL parameter
      - "Add/Update Parameter" - Add or modify a URL parameter
      - "Path Redirect" - Redirect from one path to another
+     - "Hide Element" - Hide elements using CSS selectors
    
    **For Parameter Actions (Remove/Add):**
    - **Parameter Name**: The URL parameter to modify (e.g., `debug_mode`)
@@ -62,6 +66,10 @@ All configured rules are displayed in the settings panel with:
    **For Path Redirect:**
    - **From Path**: The path to redirect from (e.g., `/u/0`)
    - **To Path**: The path to redirect to (e.g., `/u/2`)
+   
+   **For Hide Element:**
+   - **CSS Selector**: The selector for elements to hide (e.g., `.ad-banner`, `#popup-modal`)
+   - Click "Test Selector" to verify it matches elements on the current page
 
 3. Click "Save Rule"
 
@@ -154,17 +162,46 @@ This also works with sub-paths:
 Before: `https://example.com/old-dashboard/settings`
 After: `https://example.com/new-dashboard/settings`
 
+### Example 5: Hide Elements
+
+To hide annoying elements on a website:
+
+- Domain: `example.com`
+- CSS Selector: `.ad-banner, #popup-modal, div[data-ad]`
+- Action: Hide Element
+
+This will hide all elements matching the selector (ads, popups, etc.) on example.com. The extension will:
+- Hide elements immediately on page load
+- Continue watching for and hiding dynamically added elements
+- Work with single-page applications
+
+**Common CSS Selectors:**
+- `.class-name` - Hide by class
+- `#element-id` - Hide by ID
+- `div[data-ad]` - Hide by attribute
+- `header .ad-container` - Hide nested elements
+- `.ad, .banner` - Hide multiple types (comma-separated)
+
 ## How It Works
 
-The extension uses two mechanisms to modify URLs:
+The extension uses multiple mechanisms to apply rules:
 
 1. **Background Script**: Monitors navigation events and modifies URLs before the page loads
-2. **Content Script**: Runs at document start to catch any URLs that might be loaded directly
+2. **Content Script**: Runs at document start to catch URLs and hide elements
+3. **MutationObserver**: Watches for dynamically added content and applies hide rules in real-time
 
+**For URL Modifications:**
 When a matching rule is found, the extension:
 - Parses the current URL
-- Applies the configured modifications (add or remove parameters)
+- Applies the configured modifications (add or remove parameters, path redirects)
 - Reloads the page with the modified URL using `location.replace()` to avoid adding entries to browser history
+
+**For Element Hiding:**
+When a hideElement rule matches:
+- Elements are hidden on page load using `display: none !important`
+- MutationObserver continuously watches for new elements
+- Dynamically added elements matching the selector are hidden automatically
+- Works seamlessly with single-page applications and lazy-loaded content
 
 ## Technical Details
 
@@ -183,6 +220,7 @@ When a matching rule is found, the extension:
 - `storage`: To save rules and settings
 - `tabs`: To modify URLs in tabs
 - `webNavigation`: To detect URL changes
+- `scripting`: To test CSS selectors on active tabs
 - `<all_urls>`: To apply rules across all websites
 
 ### Storage

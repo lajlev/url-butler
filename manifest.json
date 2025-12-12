@@ -3,14 +3,8 @@
   "name": "URL Butler",
   "version": "1.0.0",
   "description": "Manage URL parameters based on configurable rules",
-  "permissions": [
-    "storage",
-    "tabs",
-    "webNavigation"
-  ],
-  "host_permissions": [
-    "<all_urls>"
-  ],
+  "permissions": ["storage", "tabs", "webNavigation", "scripting"],
+  "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js"
   },

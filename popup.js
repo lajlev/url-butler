@@ -13,6 +13,9 @@ const parameterGroup = document.getElementById("parameterGroup");
 const valueGroup = document.getElementById("valueGroup");
 const fromPathGroup = document.getElementById("fromPathGroup");
 const toPathGroup = document.getElementById("toPathGroup");
+const selectorGroup = document.getElementById("selectorGroup");
+const testSelectorBtn = document.getElementById("testSelectorBtn");
+const selectorTestResult = document.getElementById("selectorTestResult");
 
 let currentEditingRuleId = null;
 
@@ -55,22 +58,34 @@ function setupActionToggle() {
 function updateFormFields() {
   const action = actionSelect.value;
 
+  // Hide all conditional groups first
+  parameterGroup.style.display = "none";
+  valueGroup.style.display = "none";
+  fromPathGroup.style.display = "none";
+  toPathGroup.style.display = "none";
+  selectorGroup.style.display = "none";
+
+  // Remove all conditional required attributes
+  document.getElementById("parameter").removeAttribute("required");
+  document.getElementById("fromPath").removeAttribute("required");
+  document.getElementById("toPath").removeAttribute("required");
+  document.getElementById("selector").removeAttribute("required");
+
+  // Clear test result
+  selectorTestResult.textContent = "";
+
   if (action === "redirect") {
-    parameterGroup.style.display = "none";
-    valueGroup.style.display = "none";
     fromPathGroup.style.display = "block";
     toPathGroup.style.display = "block";
-    document.getElementById("parameter").removeAttribute("required");
     document.getElementById("fromPath").setAttribute("required", "required");
     document.getElementById("toPath").setAttribute("required", "required");
+  } else if (action === "hideElement") {
+    selectorGroup.style.display = "block";
+    document.getElementById("selector").setAttribute("required", "required");
   } else {
     parameterGroup.style.display = "block";
     valueGroup.style.display = "block";
-    fromPathGroup.style.display = "none";
-    toPathGroup.style.display = "none";
     document.getElementById("parameter").setAttribute("required", "required");
-    document.getElementById("fromPath").removeAttribute("required");
-    document.getElementById("toPath").removeAttribute("required");
   }
 }
 
@@ -112,6 +127,8 @@ function displayRules(rules) {
 
       if (rule.action === "redirect") {
         ruleDescription = `Redirect from <strong>${escapeHtml(rule.fromPath || "")}</strong> to <strong>${escapeHtml(rule.toPath || "")}</strong>`;
+      } else if (rule.action === "hideElement") {
+        ruleDescription = `Hide elements: <strong>${escapeHtml(rule.selector || "")}</strong>`;
       } else {
         ruleDescription = `${rule.action === "remove" ? "Remove" : "Add"} parameter: <strong>${escapeHtml(rule.parameter)}</strong>${rule.value ? ` = ${escapeHtml(rule.value)}` : ""}`;
       }
@@ -184,6 +201,8 @@ function editRule(ruleId) {
       if (rule.action === "redirect") {
         document.getElementById("fromPath").value = rule.fromPath || "";
         document.getElementById("toPath").value = rule.toPath || "";
+      } else if (rule.action === "hideElement") {
+        document.getElementById("selector").value = rule.selector || "";
       } else {
         document.getElementById("parameter").value = rule.parameter || "";
         document.getElementById("value").value = rule.value || "";
@@ -195,11 +214,82 @@ function editRule(ruleId) {
   });
 }
 
+// Test selector on current tab
+testSelectorBtn.addEventListener("click", async () => {
+  const selector = document.getElementById("selector").value.trim();
+
+  if (!selector) {
+    selectorTestResult.textContent = "Please enter a selector";
+    selectorTestResult.style.color = "#e74c3c";
+    return;
+  }
+
+  try {
+    // Get the active tab
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+
+    if (!tab || !tab.id) {
+      selectorTestResult.textContent = "No active tab found";
+      selectorTestResult.style.color = "#e74c3c";
+      return;
+    }
+
+    // Execute script in the active tab to test the selector
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: (sel) => {
+        try {
+          const elements = document.querySelectorAll(sel);
+          return {
+            success: true,
+            count: elements.length,
+            examples: Array.from(elements)
+              .slice(0, 3)
+              .map((el) => {
+                return {
+                  tag: el.tagName.toLowerCase(),
+                  class: el.className || "",
+                  id: el.id || "",
+                };
+              }),
+          };
+        } catch (error) {
+          return {
+            success: false,
+            error: error.message,
+          };
+        }
+      },
+      args: [selector],
+    });
+
+    const result = results[0].result;
+
+    if (!result.success) {
+      selectorTestResult.textContent = `Invalid selector: ${result.error}`;
+      selectorTestResult.style.color = "#e74c3c";
+    } else if (result.count === 0) {
+      selectorTestResult.textContent = "No elements found with this selector";
+      selectorTestResult.style.color = "#f39c12";
+    } else {
+      selectorTestResult.textContent = `Found ${result.count} element${result.count > 1 ? "s" : ""}`;
+      selectorTestResult.style.color = "#27ae60";
+    }
+  } catch (error) {
+    selectorTestResult.textContent = `Error: ${error.message}`;
+    selectorTestResult.style.color = "#e74c3c";
+  }
+});
+
 // Open modal for new rule
 addRuleBtn.addEventListener("click", () => {
   currentEditingRuleId = null;
   modalTitle.textContent = "Add Rule";
   ruleForm.reset();
+  updateFormFields();
   modal.style.display = "block";
 });
 
@@ -233,6 +323,8 @@ ruleForm.addEventListener("submit", (e) => {
   if (action === "redirect") {
     ruleData.fromPath = document.getElementById("fromPath").value.trim();
     ruleData.toPath = document.getElementById("toPath").value.trim();
+  } else if (action === "hideElement") {
+    ruleData.selector = document.getElementById("selector").value.trim();
   } else {
     ruleData.parameter = document.getElementById("parameter").value.trim();
     ruleData.value = document.getElementById("value").value.trim();
@@ -252,11 +344,19 @@ ruleForm.addEventListener("submit", (e) => {
           rule.toPath = ruleData.toPath;
           delete rule.parameter;
           delete rule.value;
+          delete rule.selector;
+        } else if (action === "hideElement") {
+          rule.selector = ruleData.selector;
+          delete rule.parameter;
+          delete rule.value;
+          delete rule.fromPath;
+          delete rule.toPath;
         } else {
           rule.parameter = ruleData.parameter;
           rule.value = ruleData.value;
           delete rule.fromPath;
           delete rule.toPath;
+          delete rule.selector;
         }
       }
     } else {

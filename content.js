@@ -4,6 +4,9 @@
 (function () {
   "use strict";
 
+  let observer = null;
+  let hideElementRules = [];
+
   // Check if we need to modify the current URL
   function checkAndModifyURL() {
     chrome.storage.sync.get(["rules", "enabled"], (result) => {
@@ -84,6 +87,110 @@
     });
   }
 
+  // Hide elements based on CSS selector
+  function hideElements(selector) {
+    try {
+      const elements = document.querySelectorAll(selector);
+      elements.forEach((element) => {
+        // Use display: none with !important to ensure it takes precedence
+        element.style.setProperty("display", "none", "important");
+        // Add a data attribute to track that we've hidden this element
+        element.setAttribute("data-url-butler-hidden", "true");
+      });
+      return elements.length;
+    } catch (error) {
+      console.error("URL Butler: Invalid selector:", selector, error);
+      return 0;
+    }
+  }
+
+  // Apply all hideElement rules for the current page
+  function applyHideElementRules() {
+    chrome.storage.sync.get(["rules", "enabled"], (result) => {
+      if (!result.enabled) return;
+
+      const rules = result.rules || [];
+      const currentUrl = new URL(window.location.href);
+
+      // Find matching hideElement rules for this domain
+      hideElementRules = rules.filter((rule) => {
+        if (!rule.enabled || rule.action !== "hideElement") return false;
+        return (
+          currentUrl.hostname === rule.domain ||
+          currentUrl.hostname.endsWith("." + rule.domain)
+        );
+      });
+
+      // Apply each rule
+      hideElementRules.forEach((rule) => {
+        if (rule.selector) {
+          hideElements(rule.selector);
+        }
+      });
+
+      // Set up MutationObserver if we have active rules
+      if (hideElementRules.length > 0 && !observer) {
+        setupMutationObserver();
+      } else if (hideElementRules.length === 0 && observer) {
+        observer.disconnect();
+        observer = null;
+      }
+    });
+  }
+
+  // Set up MutationObserver to watch for dynamically added elements
+  function setupMutationObserver() {
+    observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        // Check added nodes
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            // Apply hide rules to new elements
+            hideElementRules.forEach((rule) => {
+              if (rule.selector) {
+                // Check if the node itself matches
+                if (node.matches && node.matches(rule.selector)) {
+                  node.style.setProperty("display", "none", "important");
+                  node.setAttribute("data-url-butler-hidden", "true");
+                }
+                // Check children of the node
+                try {
+                  const matchingChildren = node.querySelectorAll(rule.selector);
+                  matchingChildren.forEach((element) => {
+                    element.style.setProperty("display", "none", "important");
+                    element.setAttribute("data-url-butler-hidden", "true");
+                  });
+                } catch (error) {
+                  // Ignore selector errors
+                }
+              }
+            });
+          }
+        });
+      });
+    });
+
+    // Start observing the document
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+    });
+  }
+
   // Run check on page load
   checkAndModifyURL();
+
+  // Wait for DOM to be ready before applying hide rules
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", applyHideElementRules);
+  } else {
+    applyHideElementRules();
+  }
+
+  // Listen for storage changes to update rules dynamically
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === "sync" && (changes.rules || changes.enabled)) {
+      applyHideElementRules();
+    }
+  });
 })();

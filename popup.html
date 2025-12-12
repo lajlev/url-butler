@@ -48,6 +48,9 @@
                                     Add/Update Parameter
                                 </option>
                                 <option value="redirect">Path Redirect</option>
+                                <option value="hideElement">
+                                    Hide Element
+                                </option>
                             </select>
                         </div>
                         <div class="form-group" id="parameterGroup">
@@ -88,6 +91,38 @@
                             <label for="toPath">To Path:</label>
                             <input type="text" id="toPath" placeholder="/u/2" />
                             <small>Path to redirect to</small>
+                        </div>
+                        <div
+                            class="form-group"
+                            id="selectorGroup"
+                            style="display: none"
+                        >
+                            <label for="selector">CSS Selector:</label>
+                            <input
+                                type="text"
+                                id="selector"
+                                placeholder=".ad-banner, #popup-modal"
+                            />
+                            <small
+                                >CSS selector for elements to hide (e.g.,
+                                .class-name, #id, div[data-ad])</small
+                            >
+                            <div
+                                id="testSelectorSection"
+                                style="margin-top: 10px"
+                            >
+                                <button
+                                    type="button"
+                                    class="btn btn-secondary"
+                                    id="testSelectorBtn"
+                                >
+                                    Test Selector
+                                </button>
+                                <span
+                                    id="selectorTestResult"
+                                    style="margin-left: 10px"
+                                ></span>
+                            </div>
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary">
